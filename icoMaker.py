@@ -53,7 +53,15 @@ def convert_to_ico():
 # Create GUI
 app = Tk()
 app.title("Image to ICO Converter")
-app.geometry("500x400")
+app.geometry("475x425")
+
+# Apply dark mode theme
+dark_bg = "#2e2e2e"  # Dark background
+dark_fg = "#ffffff"  # Light foreground
+button_bg = "#3e3e3e"  # Button background
+button_fg = "#ffffff"  # Button foreground
+
+app.configure(bg=dark_bg)  # Set the app's background color
 
 input_path = StringVar()
 output_path = StringVar()
@@ -62,18 +70,18 @@ output_path = StringVar()
 size_vars = [IntVar(value=1) for _ in range(5)]
 size_labels = ["16x16", "32x32", "48x48", "64x64", "128x128"]
 
-Label(app, text="Select Image:").pack(pady=5)
-Button(app, text="Choose Image", command=select_image).pack(pady=5)
-Label(app, textvariable=input_path).pack(pady=5)
+Label(app, text="Select Image:", bg=dark_bg, fg=dark_fg).pack(pady=5)
+Button(app, text="Choose Image", command=select_image, bg=button_bg, fg=button_fg).pack(pady=5)
+Label(app, textvariable=input_path, bg=dark_bg, fg=dark_fg).pack(pady=5)
 
-Label(app, text="Select Output Folder:").pack(pady=5)
-Button(app, text="Choose Folder", command=select_output_folder).pack(pady=5)
-Label(app, textvariable=output_path).pack(pady=5)
+Label(app, text="Select Output Folder:", bg=dark_bg, fg=dark_fg).pack(pady=5)
+Button(app, text="Choose Folder", command=select_output_folder, bg=button_bg, fg=button_fg).pack(pady=5)
+Label(app, textvariable=output_path, bg=dark_bg, fg=dark_fg).pack(pady=5)
 
-Label(app, text="Select Icon Sizes:").pack(pady=5)
+Label(app, text="Select Icon Sizes:", bg=dark_bg, fg=dark_fg).pack(pady=5)
 for size_label, var in zip(size_labels, size_vars):
-    Checkbutton(app, text=size_label, variable=var).pack(anchor="w", padx=20)
+    Checkbutton(app, text=size_label, variable=var, bg=dark_bg, fg=dark_fg, selectcolor=dark_bg).pack(anchor="w", padx=20)
 
-Button(app, text="Convert to ICO", command=convert_to_ico).pack(pady=20)
+Button(app, text="Convert to ICO", command=convert_to_ico, bg=button_bg, fg=button_fg, width=20).pack(pady=20)
 
 app.mainloop()
