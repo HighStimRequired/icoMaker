@@ -25,16 +25,18 @@ pip install pillow
 
 ## How to Use
 1. Clone or download the repository.
-2. Run the script:
+2. Run the setup.bat script
+3. Run the run.bat script OR
+   Run the script:
    ```bash
    python icoMaker.py
    ```
-3. Follow these steps in the GUI:
+5. Follow these steps in the GUI:
    - Click "Choose Image" to select an image file.
    - Click "Choose Folder" to specify the output directory.
    - Select the desired icon sizes using the checkboxes.
    - Click "Convert to ICO" to generate the `.ico` file.
-4. The application will notify you when the conversion is successful.
+6. The application will notify you when the conversion is successful.
 
 ---
 
