@@ -52,6 +52,10 @@ This project is open-source and available under the MIT License. Feel free to us
 
 ---
 
-## Author
-Created by [Your Name/Username]. Contributions and feedback are welcome!
+## Contribution
+Feel free to contribute or do whatever you want with it!
 
+---
+
+### Author
+Built with ❤️ by [Pickle](https://github.com/HighStimRequired) and powered by Python.
