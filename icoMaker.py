@@ -1,87 +1,101 @@
 import os
-from tkinter import Tk, Label, Entry, Button, filedialog, messagebox, StringVar, Checkbutton, IntVar
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
 from PIL import Image
 
-def select_image():
-    file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.bmp")])
-    if file_path:
-        input_path.set(file_path)
+class IconConverterApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Image to ICO Converter")
+        self.root.geometry("500x500")
+        self.root.resizable(False, False)
 
-def select_output_folder():
-    folder = filedialog.askdirectory()
-    if folder:
-        output_path.set(folder)
+        self.setup_theme()
+        self.setup_ui()
 
-def convert_to_ico():
-    input_file = input_path.get()
-    output_folder = output_path.get()
+    def setup_theme(self):
+        """Set up the dark theme colors."""
+        self.dark_bg = "#1e1e1e"  # Dark background
+        self.dark_fg = "#ffffff"  # Light text
+        self.button_bg = "#333333"  # Button background
+        self.highlight_bg = "#444444"  # Slightly lighter background for contrast
+        self.accent_color = "#5e9fff"  # Accent color for buttons
 
-    if not input_file:
-        messagebox.showerror("Error", "Please select an image file.")
-        return
+        self.root.configure(bg=self.dark_bg)
 
-    if not output_folder:
-        messagebox.showerror("Error", "Please select an output folder.")
-        return
+    def setup_ui(self):
+        """Set up the user interface components."""
+        # Title Label
+        tk.Label(self.root, text="Image to ICO Converter", fg=self.dark_fg, bg=self.dark_bg, font=("Arial", 14, "bold")).pack(pady=10)
 
-    try:
-        # Open the image file
-        img = Image.open(input_file)
+        # File selection
+        self.input_path = tk.StringVar()
+        tk.Label(self.root, text="Select Image(s):", fg=self.dark_fg, bg=self.dark_bg).pack()
+        tk.Button(self.root, text="Choose Images", command=self.select_images, bg=self.accent_color, fg=self.dark_fg, relief="flat").pack(pady=5)
+        tk.Label(self.root, textvariable=self.input_path, fg=self.dark_fg, bg=self.highlight_bg, wraplength=400).pack(pady=5, padx=10, fill="x")
 
-        # Ensure the image is in RGBA mode
-        img = img.convert("RGBA")
+        # Output selection
+        self.output_path = tk.StringVar()
+        tk.Label(self.root, text="Select Output Folder:", fg=self.dark_fg, bg=self.dark_bg).pack()
+        tk.Button(self.root, text="Choose Folder", command=self.select_output_folder, bg=self.accent_color, fg=self.dark_fg, relief="flat").pack(pady=5)
+        tk.Label(self.root, textvariable=self.output_path, fg=self.dark_fg, bg=self.highlight_bg, wraplength=400).pack(pady=5, padx=10, fill="x")
 
-        # Create a list of sizes for the .ico file
-        sizes = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128)]
+        # Icon size selection
+        tk.Label(self.root, text="Select Icon Sizes:", fg=self.dark_fg, bg=self.dark_bg).pack(pady=5)
+        self.size_vars = [tk.IntVar(value=1) for _ in range(5)]
+        self.size_labels = ["16x16", "32x32", "48x48", "64x64", "128x128"]
+        
+        size_frame = tk.Frame(self.root, bg=self.dark_bg)
+        size_frame.pack()
+        for size_label, var in zip(self.size_labels, self.size_vars):
+            tk.Checkbutton(size_frame, text=size_label, variable=var, fg=self.dark_fg, bg=self.dark_bg, selectcolor=self.dark_bg).pack(side="left", padx=5)
 
-        # Filter sizes based on user selection
-        selected_sizes = [size for size, var in zip(sizes, size_vars) if var.get() == 1]
+        # Convert button
+        tk.Button(self.root, text="Convert to ICO", command=self.convert_to_ico, bg=self.accent_color, fg=self.dark_fg, relief="flat", font=("Arial", 12, "bold"), width=20).pack(pady=20)
 
+    def select_images(self):
+        """Allow user to select multiple image files."""
+        files = filedialog.askopenfilenames(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.bmp")])
+        if files:
+            self.input_path.set("; ".join(files))
+
+    def select_output_folder(self):
+        """Allow user to select an output folder."""
+        folder = filedialog.askdirectory()
+        if folder:
+            self.output_path.set(folder)
+
+    def convert_to_ico(self):
+        """Convert selected images to .ico format."""
+        input_files = self.input_path.get().split("; ")
+        output_folder = self.output_path.get()
+
+        if not input_files or not input_files[0]:
+            messagebox.showerror("Error", "Please select an image file.")
+            return
+
+        if not output_folder:
+            messagebox.showerror("Error", "Please select an output folder.")
+            return
+
+        selected_sizes = [size for size, var in zip([(16, 16), (32, 32), (48, 48), (64, 64), (128, 128)], self.size_vars) if var.get() == 1]
+        
         if not selected_sizes:
             messagebox.showerror("Error", "Please select at least one icon size.")
             return
 
-        # Generate the .ico file
-        output_file = os.path.join(output_folder, os.path.splitext(os.path.basename(input_file))[0] + ".ico")
-        img.save(output_file, format="ICO", sizes=selected_sizes)
+        for input_file in input_files:
+            try:
+                img = Image.open(input_file).convert("RGBA")
+                output_file = os.path.join(output_folder, os.path.splitext(os.path.basename(input_file))[0] + ".ico")
+                img.save(output_file, format="ICO", sizes=selected_sizes)
+                messagebox.showinfo("Success", f"Icon file saved to {output_file}")
 
-        messagebox.showinfo("Success", f"Icon file saved to {output_file}")
+            except Exception as e:
+                messagebox.showerror("Error", f"An error occurred: {e}")
 
-    except Exception as e:
-        messagebox.showerror("Error", f"An error occurred: {e}")
-
-# Create GUI
-app = Tk()
-app.title("Image to ICO Converter")
-app.geometry("475x425")
-
-# Apply dark mode theme
-dark_bg = "#2e2e2e"  # Dark background
-dark_fg = "#ffffff"  # Light foreground
-button_bg = "#3e3e3e"  # Button background
-button_fg = "#ffffff"  # Button foreground
-
-app.configure(bg=dark_bg)  # Set the app's background color
-
-input_path = StringVar()
-output_path = StringVar()
-
-# Icon sizes selection
-size_vars = [IntVar(value=1) for _ in range(5)]
-size_labels = ["16x16", "32x32", "48x48", "64x64", "128x128"]
-
-Label(app, text="Select Image:", bg=dark_bg, fg=dark_fg).pack(pady=5)
-Button(app, text="Choose Image", command=select_image, bg=button_bg, fg=button_fg).pack(pady=5)
-Label(app, textvariable=input_path, bg=dark_bg, fg=dark_fg).pack(pady=5)
-
-Label(app, text="Select Output Folder:", bg=dark_bg, fg=dark_fg).pack(pady=5)
-Button(app, text="Choose Folder", command=select_output_folder, bg=button_bg, fg=button_fg).pack(pady=5)
-Label(app, textvariable=output_path, bg=dark_bg, fg=dark_fg).pack(pady=5)
-
-Label(app, text="Select Icon Sizes:", bg=dark_bg, fg=dark_fg).pack(pady=5)
-for size_label, var in zip(size_labels, size_vars):
-    Checkbutton(app, text=size_label, variable=var, bg=dark_bg, fg=dark_fg, selectcolor=dark_bg).pack(anchor="w", padx=20)
-
-Button(app, text="Convert to ICO", command=convert_to_ico, bg=button_bg, fg=button_fg, width=20).pack(pady=20)
-
-app.mainloop()
+# Run the app
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = IconConverterApp(root)
+    root.mainloop()
