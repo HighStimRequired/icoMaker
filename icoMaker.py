@@ -1,125 +1,189 @@
 import os
-import tkinter as tk
-import tkinter.font as tkFont
-from tkinter import filedialog, messagebox
+from PyQt6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QFileDialog,
+    QLineEdit, QCheckBox, QHBoxLayout, QMessageBox, QFrame
+)
+from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtCore import Qt
 from PIL import Image
 
-class IconConverterApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("icoMaker")
-        self.root.geometry("370x310")
-        self.root.resizable(False, False)
 
-        self.setup_theme()
-        self.setup_ui()
+class IcoMakerApp(QWidget):
+    def __init__(self):
+        super().__init__()
 
-    def setup_theme(self):
-        """Set up the theme colors."""
-        self.dark_bg = "#09000f"      # Main background
-        self.dark_fg = "#ffffff"      # Text color
-        self.input_bg = "#6b4a5e"     # Input field background
-        self.input_fg = "#ffffff"     # Input text color
-        self.accent_color = "#6b4a5e" # Button color
-        self.check_bg = "#2c1e2e"     # Checkbox background when selected
-        self.check_fg = "#ffffff"     # Check mark color
-        self.root.configure(bg=self.dark_bg)
+        # App settings
+        self.setWindowTitle("icoMaker")
+        self.setFixedSize(520, 460)
+        self.setStyleSheet("background-color: #09000f; color: #ffffff;")
 
-    def setup_ui(self):
-        """Set up the user interface components."""
-        custom_font = tkFont.Font(family="Arial", size=16, weight="bold")
-        button_font = tkFont.Font(family="Arial", size=12, weight="bold")
+        # Font settings
+        self.font = QFont("Roboto", 12)
+        self.button_font = QFont("Roboto", 12, QFont.Weight.Bold)
 
-        tk.Label(self.root, text="", fg=self.dark_fg, bg=self.dark_bg, font=custom_font).pack(pady=0)
+        # File paths
+        self.input_files = []
+        self.output_folder = ""
+        self.output_filename = ""
 
-        self.input_path = tk.StringVar()
-        self.output_path = tk.StringVar()
+        # Sizes selection
+        self.sizes = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128)]
+        self.size_checkboxes = []
 
-        button_width = 13
+        self.init_ui()
 
-        tk.Button(self.root, text="Choose Images", command=self.select_images, 
-                  bg=self.accent_color, fg=self.dark_fg, width=button_width, 
-                  font=button_font).pack(pady=1)
-        tk.Label(self.root, textvariable=self.input_path, fg=self.dark_fg, 
-                 bg=self.dark_bg, wraplength=400).pack(pady=1)
+    def init_ui(self):
+        """Builds the modern UI layout."""
+        layout = QVBoxLayout()
 
-        tk.Button(self.root, text="Choose Folder", command=self.select_output_folder, 
-                  bg=self.accent_color, fg=self.dark_fg, width=button_width, 
-                  font=button_font).pack(pady=1)
-        tk.Label(self.root, textvariable=self.output_path, fg=self.dark_fg, 
-                 bg=self.dark_bg, wraplength=400).pack(pady=1)
+        # Title
+        title = QLabel("icoMaker")
+        title.setFont(QFont("Roboto", 22, QFont.Weight.Bold))
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
 
-        self.filename_var = tk.StringVar()
-        tk.Label(self.root, text="Output File Name (optional):", fg=self.dark_fg, 
-                 bg=self.dark_bg).pack()
-        tk.Entry(self.root, textvariable=self.filename_var, width=30, 
-                 bg=self.input_bg, fg=self.input_fg, insertbackground=self.input_fg).pack(pady=8)
+        # Divider
+        layout.addWidget(self.create_divider())
 
-        self.size_vars = [tk.IntVar(value=1) for _ in range(5)]
-        self.size_labels = ["16x16", "32x32", "48x48", "64x64", "128x128"]
-        size_frame = tk.Frame(self.root, bg=self.dark_bg)
-        size_frame.pack()
+        # Image Selection
+        self.input_label = QLabel("No images selected")
+        self.input_label.setFont(self.font)
+        self.input_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        btn_select_images = QPushButton("Choose Images")
+        btn_select_images.setFont(self.button_font)
+        btn_select_images.setStyleSheet(self.button_style())
+        btn_select_images.clicked.connect(self.select_images)
 
-        for size_label, var in zip(self.size_labels, self.size_vars):
-            tk.Checkbutton(size_frame, text=size_label, variable=var, 
-                           fg=self.dark_fg, bg=self.dark_bg, 
-                           selectcolor=self.check_bg, activebackground=self.check_bg, 
-                           activeforeground=self.check_fg).pack(side="left", padx=5)
+        layout.addWidget(btn_select_images)
+        layout.addWidget(self.input_label)
 
-        self.convert_button = tk.Button(self.root, text="Convert to .ico", command=self.convert_to_ico, 
-                                        bg=self.accent_color, fg=self.dark_fg, 
-                                        font=("Arial", 12, "bold"), width=20)
-        self.convert_button.pack(pady=25)
+        # Divider
+        layout.addWidget(self.create_divider())
 
-        tk.Label(self.root, text="", fg=self.dark_fg, bg=self.dark_bg, font=custom_font).pack(pady=1)
+        # Output Folder Selection
+        self.output_label = QLabel("No output folder selected")
+        self.output_label.setFont(self.font)
+        self.output_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        btn_select_output = QPushButton("Choose Output Folder")
+        btn_select_output.setFont(self.button_font)
+        btn_select_output.setStyleSheet(self.button_style())
+        btn_select_output.clicked.connect(self.select_output_folder)
+
+        layout.addWidget(btn_select_output)
+        layout.addWidget(self.output_label)
+
+        # Divider
+        layout.addWidget(self.create_divider())
+
+        # Output File Name
+        self.filename_input = QLineEdit()
+        self.filename_input.setFont(self.font)
+        self.filename_input.setPlaceholderText("Enter output file name (optional)")
+        self.filename_input.setStyleSheet("background-color: #6b4a5e; color: #ffffff; padding: 6px;")
+        layout.addWidget(self.filename_input)
+
+        # Divider
+        layout.addWidget(self.create_divider())
+
+        # Icon Sizes Selection
+        size_label = QLabel("Select Icon Sizes:")
+        size_label.setFont(self.font)
+        layout.addWidget(size_label)
+
+        size_layout = QHBoxLayout()
+        for size in self.sizes:
+            checkbox = QCheckBox(f"{size[0]}x{size[1]}")
+            checkbox.setChecked(True)
+            checkbox.setFont(self.font)
+            checkbox.setStyleSheet("color: #ffffff;")
+            size_layout.addWidget(checkbox)
+            self.size_checkboxes.append(checkbox)
+
+        layout.addLayout(size_layout)
+
+        # Divider
+        layout.addWidget(self.create_divider())
+
+        # Convert Button
+        btn_convert = QPushButton("Convert to .ICO")
+        btn_convert.setFont(self.button_font)
+        btn_convert.setStyleSheet(self.button_style())
+        btn_convert.clicked.connect(self.convert_to_ico)
+        layout.addWidget(btn_convert)
+
+        self.setLayout(layout)
+
+    def create_divider(self):
+        """Creates a modern divider."""
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        line.setStyleSheet("color: #6b4a5e;")
+        return line
+
+    def button_style(self):
+        """Returns a consistent button style."""
+        return """
+        QPushButton {
+            background-color: #6b4a5e;
+            color: white;
+            border-radius: 5px;
+            padding: 8px;
+        }
+        QPushButton:hover {
+            background-color: #8c6278;
+        }
+        QPushButton:pressed {
+            background-color: #5a3a4c;
+        }
+        """
 
     def select_images(self):
-        files = filedialog.askopenfilenames(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.bmp;*.webp;*.tiff")])
+        """Opens file dialog to select images."""
+        files, _ = QFileDialog.getOpenFileNames(self, "Select Images", "", "Image Files (*.png *.jpg *.jpeg *.bmp *.webp *.tiff)")
         if files:
-            self.input_path.set("; ".join(files))
+            self.input_files = files
+            self.input_label.setText(f"{len(files)} image(s) selected")
 
     def select_output_folder(self):
-        folder = filedialog.askdirectory()
+        """Opens folder dialog to select output folder."""
+        folder = QFileDialog.getExistingDirectory(self, "Select Output Folder")
         if folder:
-            self.output_path.set(folder)
+            self.output_folder = folder
+            self.output_label.setText(f"Selected: {folder}")
 
     def convert_to_ico(self):
-        input_files = self.input_path.get().split("; ")
-        output_folder = self.output_path.get()
-        output_filename = self.filename_var.get()
-
-        if not input_files or not input_files[0]:
-            messagebox.showerror("Error", "Please select an image file.")
-            return
-        if not output_folder:
-            messagebox.showerror("Error", "Please select an output folder.")
+        """Converts selected images to ICO format."""
+        if not self.input_files:
+            QMessageBox.warning(self, "Error", "Please select image files.")
             return
 
-        selected_sizes = [size for size, var in zip([(16, 16), (32, 32), (48, 48), (64, 64), (128, 128)], self.size_vars) if var.get() == 1]
+        if not self.output_folder:
+            QMessageBox.warning(self, "Error", "Please select an output folder.")
+            return
+
+        selected_sizes = [size for size, checkbox in zip(self.sizes, self.size_checkboxes) if checkbox.isChecked()]
         if not selected_sizes:
-            messagebox.showerror("Error", "Please select at least one icon size.")
+            QMessageBox.warning(self, "Error", "Please select at least one icon size.")
             return
 
-        self.convert_button.config(state=tk.DISABLED)
+        self.output_filename = self.filename_input.text().strip()
 
-        for input_file in input_files:
+        for file in self.input_files:
             try:
-                img = Image.open(input_file).convert("RGBA")
-                available_sizes = [s for s in selected_sizes if s[0] <= img.size[0] and s[1] <= img.size[1]]
-                if not available_sizes:
-                    available_sizes = [(16, 16)]
-                if output_filename:
-                    output_file = os.path.join(output_folder, output_filename + ".ico")
-                else:
-                    output_file = os.path.join(output_folder, os.path.splitext(os.path.basename(input_file))[0] + ".ico")
-                img.save(output_file, format="ICO", sizes=available_sizes)
+                img = Image.open(file).convert("RGBA")
+                output_file = os.path.join(
+                    self.output_folder, 
+                    f"{self.output_filename or os.path.splitext(os.path.basename(file))[0]}.ico"
+                )
+                img.save(output_file, format="ICO", sizes=selected_sizes)
             except Exception as e:
-                messagebox.showerror("Error", f"An error occurred: {e}")
+                QMessageBox.critical(self, "Error", f"An error occurred: {e}")
 
-        self.convert_button.config(state=tk.NORMAL)
-        messagebox.showinfo("Success", "All images converted successfully!")
+        QMessageBox.information(self, "Success", "All images converted successfully!")
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = IconConverterApp(root)
-    root.mainloop()
+    app = QApplication([])
+    window = IcoMakerApp()
+    window.show()
+    app.exec()
